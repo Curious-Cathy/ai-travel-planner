@@ -141,6 +141,8 @@ The app will open in your browser at **http://localhost:8501**.
 
 ## 📸 Usage
 
+![AI Travel Planner Screenshot](screenshot.png)
+
 1. Open the sidebar and enter your **destination** (e.g. _Tokyo, Japan_).
 2. Set the **number of days** (1–30), **budget level** (Low / Medium / High), and **interests** (Food, Adventure, Nature, etc.).
 3. Click **🚀 Generate My Travel Plan**.

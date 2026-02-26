@@ -1,6 +1,6 @@
 """
 ============================================
-🤖 LLM Handler — Groq API Integration
+LLM Handler — Groq API Integration
 ============================================
 This module handles all AI/LLM logic for the
 Travel Planner app. It keeps API configuration
