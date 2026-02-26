@@ -9,7 +9,7 @@ An AI-powered travel itinerary generator built with **Python**, **Streamlit**, a
 
 ---
 
-## ✨ Features
+## Features
 
 | Feature | Description |
 |---------|-------------|
@@ -26,7 +26,7 @@ An AI-powered travel itinerary generator built with **Python**, **Streamlit**, a
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend** — [Streamlit](https://streamlit.io/)
 - **LLM** — [Groq API](https://console.groq.com/) (LLaMA 3.3 70B Versatile)
@@ -36,7 +36,7 @@ An AI-powered travel itinerary generator built with **Python**, **Streamlit**, a
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 ai-travel-planner/
@@ -56,7 +56,7 @@ ai-travel-planner/
 
 ---
 
-## ⚙️ How It Works
+## How It Works
 
 ```
 ┌──────────────────────┐
@@ -92,7 +92,7 @@ ai-travel-planner/
 
 ---
 
-## 🚀 Quick Start
+# Quick Start
 
 ### 1. Clone the repository
 
@@ -139,7 +139,7 @@ The app will open in your browser at **http://localhost:8501**.
 
 ---
 
-## 📸 Usage
+##  Usage
 
 ![AI Travel Planner Screenshot](screenshot.png)
 
@@ -152,17 +152,6 @@ The app will open in your browser at **http://localhost:8501**.
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to:
-
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m "feat: add your feature"`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
-
----
 
 ## 📝 License
 
