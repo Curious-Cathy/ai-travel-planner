@@ -1,12 +1,13 @@
 """
 ============================================
- AI-Powered Travel Planner — UI Layer
+🌍 AI-Powered Travel Planner — UI Layer
 ============================================
 A Streamlit web app that generates personalized
 day-wise travel itineraries using Groq API.
 
 This file handles ONLY the user interface.
 All AI/LLM logic lives in llm_handler.py.
+PDF generation lives in utils/pdf_generator.py.
 
 Author    : Your Name
 Hackathon : Your Hackathon Name
@@ -16,9 +17,13 @@ Built with: Python, Streamlit, Groq API (LLaMA 3)
 
 # ── Imports ──────────────────────────────────────────────
 import streamlit as st
+import pandas as pd
 
-# Import the AI function from our handler module
-from llm_handler import generate_itinerary
+# Import AI function and budget parser from our handler module
+from llm_handler import generate_itinerary, parse_budget_table
+
+# Import PDF generator
+from utils.pdf_generator import generate_pdf
 
 # ── Page configuration (must be the first Streamlit call) ─
 st.set_page_config(
@@ -74,6 +79,15 @@ st.markdown(
         border-radius: 8px;
         padding: 1.5rem;
         margin-top: 1rem;
+    }
+
+    /* ── Budget highlight box ────────────────────────── */
+    .budget-box {
+        background: linear-gradient(135deg, #f0f4f8, #e8eef3);
+        border: 1px solid #2C5364;
+        border-radius: 10px;
+        padding: 1.2rem;
+        margin: 1rem 0;
     }
 
     /* ── Footer ──────────────────────────────────────── */
@@ -139,6 +153,13 @@ with st.sidebar:
         help="Select your overall budget level.",
     )
 
+    # --- Travel style ---
+    style = st.selectbox(
+        "🧳 Travel Style",
+        options=["Solo", "Couple", "Family", "Friends"],
+        help="Who are you traveling with?",
+    )
+
     # --- Interests (multiselect) ---
     interests = st.multiselect(
         "❤️ Interests",
@@ -170,6 +191,7 @@ if generate_btn:
                     destination=destination,
                     days=days,
                     budget=budget,
+                    style=style,
                     interests=interests,
                 )
             except RuntimeError as e:
@@ -182,23 +204,57 @@ if generate_btn:
             st.success("🎉 Your travel plan is ready!")
             st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
 
-            # Show itinerary inside a styled card
-            st.markdown(
-                f"<div class='itinerary-card'>{''}</div>",
-                unsafe_allow_html=True,
-            )
+            # ── Full itinerary in Markdown ───────────────
             st.markdown(itinerary)
 
             st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
 
-            # ── Download itinerary as .txt ────────────────
-            st.download_button(
-                label="📥 Download Itinerary as Text File",
-                data=itinerary,
-                file_name=f"{destination.strip().replace(' ', '_')}_itinerary.txt",
-                mime="text/plain",
-                use_container_width=True,
-            )
+            # ── Budget Summary Table (extracted) ─────────
+            budget_data = parse_budget_table(itinerary)
+
+            if budget_data:
+                st.markdown("### 💰 Budget Summary")
+                st.markdown(
+                    "<div class='budget-box'>",
+                    unsafe_allow_html=True,
+                )
+
+                # Convert to DataFrame for st.table()
+                df = pd.DataFrame(budget_data)
+                st.table(df)
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
+
+            # ── Download Buttons ─────────────────────────
+            st.markdown("### 📥 Download Your Itinerary")
+            col1, col2 = st.columns(2)
+
+            # Download as TXT
+            with col1:
+                st.download_button(
+                    label="📄 Download as TXT",
+                    data=itinerary,
+                    file_name=f"{destination.strip().replace(' ', '_')}_itinerary.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                )
+
+            # Download as PDF
+            with col2:
+                try:
+                    pdf_bytes = generate_pdf(itinerary, destination)
+                    st.download_button(
+                        label="📕 Download as PDF",
+                        data=pdf_bytes,
+                        file_name=f"{destination.strip().replace(' ', '_')}_itinerary.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                    )
+                except Exception as e:
+                    st.error(f"❌ PDF generation failed: {e}")
+
         elif itinerary is None and not error_occurred:
             # API key is missing — show setup instructions
             st.error(
@@ -219,8 +275,10 @@ else:
         - 📅 Day-by-day plan with morning / afternoon / evening activities
         - 🏛️ Must-visit attractions
         - 🍽️ Local food recommendations
-        - 💰 Budget breakdown
+        - 💰 Budget breakdown with summary table
         - 💡 Practical travel tips
+        - 🎒 Packing suggestions for your destination
+        - 📥 Download as **TXT** or **PDF**
 
         *Powered by Groq (LLaMA 3) · Built with Streamlit*
         """

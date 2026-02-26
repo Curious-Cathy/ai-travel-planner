@@ -1,24 +1,23 @@
 """
 ============================================
- LLM Handler — Groq API Integration
+🤖 LLM Handler — Groq API Integration
 ============================================
 This module handles all AI/LLM logic for the
 Travel Planner app. It keeps API configuration
 and prompt engineering separate from the UI.
 
-Model  : llama3-8b-8192
+Model  : llama-3.3-70b-versatile
 API    : Groq (OpenAI-compatible format)
 ============================================
 """
 
 # ── Imports ──────────────────────────────────────────────
 import os
+import re
 from groq import Groq
 from dotenv import load_dotenv
 
 # ── Load environment variables from .env ─────────────────
-# This reads GROQ_API_KEY from the .env file so we never
-# hard-code secrets in our source code.
 load_dotenv()
 
 # ── Read the API key ─────────────────────────────────────
@@ -27,37 +26,47 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # ── Model to use ─────────────────────────────────────────
 MODEL_NAME = "llama-3.3-70b-versatile"
 
+# ── Strong system prompt for professional output ─────────
+SYSTEM_PROMPT = (
+    "You are a professional travel planning AI assistant. "
+    "You create detailed, practical, and well-organized travel itineraries. "
+    "Always structure your responses clearly using Markdown headings, "
+    "bullet points, and tables. Be specific with real place names, "
+    "prices, and actionable advice. "
+    "Never use placeholder text — always provide real recommendations."
+)
+
 
 # ══════════════════════════════════════════════════════════
 #  PROMPT BUILDER (private helper)
 # ══════════════════════════════════════════════════════════
 
-def _build_prompt(destination, days, budget, interests):
+def _build_prompt(destination, days, budget, style, interests):
     """
-    Build a detailed, structured prompt that tells the LLM
-    exactly what kind of travel itinerary to generate.
+    Build a detailed, structured prompt that instructs the LLM
+    to generate a professional travel itinerary with tables,
+    budget breakdown, and packing suggestions.
 
     Args:
         destination (str) : City or country to visit.
         days        (int) : Number of travel days.
         budget      (str) : Budget level — "Low", "Medium", or "High".
+        style       (str) : Travel style — "Solo", "Couple", "Family", or "Friends".
         interests   (list): List of interest tags, e.g. ["Food", "Nature"].
 
     Returns:
         str : The fully formatted prompt string.
     """
-    # Convert the interests list into a readable string
     interests_str = ", ".join(interests) if interests else "General sightseeing"
 
     prompt = f"""
-You are an expert travel planner. Create a detailed {days}-day travel itinerary
-for {destination} with the following preferences:
+Create a detailed {days}-day travel itinerary for **{destination}** with these preferences:
 
-- Budget Level : {budget}
-- Interests    : {interests_str}
+- **Budget Level**: {budget}
+- **Travel Style**: {style}
+- **Interests**: {interests_str}
 
-IMPORTANT: Use **Markdown tables** wherever possible to make the plan look
-professional and easy to scan. Follow this exact structure:
+IMPORTANT: Use **Markdown tables** wherever possible. Follow this EXACT structure:
 
 ---
 
@@ -68,91 +77,172 @@ professional and easy to scan. Follow this exact structure:
 | Destination   | {destination}     |
 | Duration      | {days} day(s)     |
 | Budget        | {budget}          |
+| Travel Style  | {style}           |
 | Interests     | {interests_str}   |
 
 ---
 
 ## 📅 Day-wise Itinerary
 
-For **each day**, create a section heading (e.g. "### Day 1 — Title") and
-then a table like this:
+For **each day**, create a heading (### Day 1 — Title) and a table:
 
-| Time of Day | Activity | Place / Location | Duration |
+| Time of Day  | Activity | Place / Location | Duration |
 |-------------|----------|------------------|----------|
 | 🌅 Morning  | ...      | ...              | ...      |
-| 🌞 Afternoon| ...      | ...              | ...      |
+| 🌞 Afternoon | ...     | ...              | ...      |
 | 🌙 Evening  | ...      | ...              | ...      |
 
-Include 2-3 activities per time slot. Be specific with real place names.
+Include 2-3 activities per time slot with real place names.
 
 ---
 
 ## 🏛️ Top Attractions
 
-Present as a table:
+| # | Attraction | Description | Entry Fee |
+|---|-----------|-------------|-----------|
+| 1 | ...       | ...         | ...       |
 
-| # | Attraction | Description | Estimated Entry Fee |
-|---|-----------|-------------|---------------------|
-| 1 | ...       | ...         | ...                 |
-
-List at least 6-8 attractions.
+List at least 6-8 real attractions.
 
 ---
 
 ## 🍽️ Food Recommendations
 
-Present as a table:
-
 | Dish / Cuisine | Restaurant / Area | Price Range | Must-Try? |
 |---------------|-------------------|-------------|-----------|
-| ...           | ...               | ...         | ⭐ Yes / No|
+| ...           | ...               | ...         | ⭐ Yes / No |
 
-Include at least 5-6 recommendations with local specialties.
+Include 5-6 local specialties.
 
 ---
 
 ## 💰 Budget Breakdown
 
-Present the estimated daily costs as a table:
+IMPORTANT: Use this EXACT table format with realistic numbers:
 
 | Category          | Estimated Daily Cost | {days}-Day Total |
 |-------------------|---------------------|------------------|
-| 🏨 Accommodation  | ...                 | ...              |
-| 🍽️ Food & Drinks  | ...                 | ...              |
-| 🚗 Transportation | ...                 | ...              |
-| 🎟️ Activities     | ...                 | ...              |
-| 🛍️ Shopping/Misc  | ...                 | ...              |
-| **💵 TOTAL**      | **...**             | **...**          |
+| 🏨 Accommodation  | $XX                 | $XX              |
+| 🍽️ Food & Drinks  | $XX                 | $XX              |
+| 🚗 Transportation | $XX                 | $XX              |
+| 🎟️ Activities     | $XX                 | $XX              |
+| 🛍️ Miscellaneous  | $XX                 | $XX              |
+| **💵 TOTAL**      | **$XX**             | **$XX**          |
+
+Use realistic dollar amounts. DO NOT use placeholder "XX" — give real estimates.
 
 ---
 
 ## 💡 Travel Tips
 
-Present as a numbered table:
-
-| # | Category    | Tip |
-|---|------------|-----|
-| 1 | 🛡️ Safety  | ... |
-| 2 | 🧳 Packing | ... |
-| 3 | 🚌 Transport| ... |
-| 4 | 🌤️ Weather | ... |
-| 5 | 🗣️ Customs | ... |
-
-Include 5-7 practical, actionable tips.
+| # | Category     | Tip |
+|---|-------------|-----|
+| 1 | 🛡️ Safety   | ... |
+| 2 | 🧳 Packing  | ... |
+| 3 | 🚌 Transport | ... |
+| 4 | 🌤️ Weather  | ... |
+| 5 | 🗣️ Language  | ... |
+| 6 | 💳 Money     | ... |
+| 7 | 📱 Apps      | ... |
 
 ---
 
-Format everything in clean, well-structured Markdown with proper headings
-and tables. Be specific, actionable, and use real place names.
+## 🎒 Packing Suggestions
+
+Based on {destination} for {days} days with a {budget} budget, suggest what to pack.
+Organize into categories:
+
+| Category       | Items |
+|---------------|-------|
+| 👕 Clothing    | ... (list 4-5 items, weather-appropriate) |
+| 👟 Footwear    | ... (list 2-3 items based on activities) |
+| 🧴 Toiletries  | ... (list 3-4 essentials) |
+| 📱 Electronics | ... (list 3-4 items) |
+| 📄 Documents   | ... (list 3-4 items) |
+| 🎒 Extras      | ... (list 3-4 useful items) |
+
+Be specific to {destination}'s climate, culture, and the planned activities.
+
+---
+
+Format everything in clean Markdown with proper headings and tables.
+Be specific, actionable, and use real place names and prices.
 """
     return prompt
+
+
+# ══════════════════════════════════════════════════════════
+#  BUDGET PARSER — extract budget table for st.table()
+# ══════════════════════════════════════════════════════════
+
+def parse_budget_table(itinerary_text):
+    """
+    Extract budget data from the generated itinerary text
+    and return it as a list of dictionaries for st.table().
+
+    Looks for the Budget Breakdown section and parses the
+    markdown table rows into structured data.
+
+    Args:
+        itinerary_text (str): The full itinerary markdown text.
+
+    Returns:
+        list[dict]: Budget items with Category, Daily Cost, and Total.
+                    Returns empty list if parsing fails.
+    """
+    budget_data = []
+
+    try:
+        # Find the Budget Breakdown section
+        budget_match = re.search(
+            r"##\s*💰\s*Budget Breakdown(.*?)(?=\n##\s|\Z)",
+            itinerary_text,
+            re.DOTALL | re.IGNORECASE,
+        )
+
+        if not budget_match:
+            return budget_data
+
+        budget_section = budget_match.group(1)
+
+        # Parse each table row (skip header and separator rows)
+        # Match rows like: | 🏨 Accommodation | $50 | $150 |
+        row_pattern = re.compile(
+            r"\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|"
+        )
+
+        for match in row_pattern.finditer(budget_section):
+            category = match.group(1).strip()
+            daily_cost = match.group(2).strip()
+            total_cost = match.group(3).strip()
+
+            # Skip header row, separator rows, and empty rows
+            if (
+                "---" in category
+                or "Category" in category
+                or "Estimated" in daily_cost
+                or not category
+            ):
+                continue
+
+            budget_data.append({
+                "Category": category,
+                "Daily Cost": daily_cost,
+                "Total": total_cost,
+            })
+
+    except Exception:
+        # If parsing fails, return empty — app.py will skip the table
+        pass
+
+    return budget_data
 
 
 # ══════════════════════════════════════════════════════════
 #  MAIN FUNCTION — called by app.py
 # ══════════════════════════════════════════════════════════
 
-def generate_itinerary(destination, days, budget, interests):
+def generate_itinerary(destination, days, budget, style, interests):
     """
     Generate a travel itinerary using Groq API (LLaMA 3).
 
@@ -164,6 +254,7 @@ def generate_itinerary(destination, days, budget, interests):
         destination (str) : City or country to visit.
         days        (int) : Number of travel days.
         budget      (str) : Budget level — "Low", "Medium", or "High".
+        style       (str) : Travel style — "Solo", "Couple", "Family", or "Friends".
         interests   (list): List of interest tags.
 
     Returns:
@@ -175,40 +266,33 @@ def generate_itinerary(destination, days, budget, interests):
     """
     # ── Guard: make sure the API key is set ──────────────
     if not GROQ_API_KEY or GROQ_API_KEY == "your-groq-api-key-here":
-        return None  # app.py will show an appropriate error message
+        return None
 
     # ── Build the prompt ─────────────────────────────────
-    prompt = _build_prompt(destination, days, budget, interests)
+    prompt = _build_prompt(destination, days, budget, style, interests)
 
     # ── Call Groq API ────────────────────────────────────
     try:
-        # Create the Groq client with the API key
         client = Groq(api_key=GROQ_API_KEY)
 
-        # Use the chat completions endpoint (OpenAI-compatible)
+        # System + User message format for best results
         response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
                 {
                     "role": "system",
-                    "content": (
-                        "You are a helpful and knowledgeable travel planning "
-                        "assistant. You provide detailed, practical, and well-"
-                        "organized travel itineraries."
-                    ),
+                    "content": SYSTEM_PROMPT,
                 },
                 {
                     "role": "user",
                     "content": prompt,
                 },
             ],
-            temperature=0.7,   # slight creativity
-            max_tokens=4096,   # enough for detailed tables
+            temperature=0.7,
+            max_tokens=4096,
         )
 
-        # Extract and return the assistant's reply text
         return response.choices[0].message.content
 
     except Exception as e:
-        # Raise so app.py can catch and display the error
         raise RuntimeError(f"Groq API error: {e}")
