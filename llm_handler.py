@@ -118,18 +118,20 @@ Include 5-6 local specialties.
 
 ## 💰 Budget Breakdown
 
-IMPORTANT: Use this EXACT table format with realistic numbers:
+IMPORTANT: Show costs in **BOTH the local currency of {destination} AND Indian Rupees (₹)**.
+Format: `Local Amount (₹ INR Amount)` — e.g. `¥5,000 (₹3,400)` or `€50 (₹4,600)`
+If the destination is in India, just use ₹.
 
 | Category          | Estimated Daily Cost | {days}-Day Total |
 |-------------------|---------------------|------------------|
-| 🏨 Accommodation  | $XX                 | $XX              |
-| 🍽️ Food & Drinks  | $XX                 | $XX              |
-| 🚗 Transportation | $XX                 | $XX              |
-| 🎟️ Activities     | $XX                 | $XX              |
-| 🛍️ Miscellaneous  | $XX                 | $XX              |
-| **💵 TOTAL**      | **$XX**             | **$XX**          |
+| 🏨 Accommodation  | ...                 | ...              |
+| 🍽️ Food & Drinks  | ...                 | ...              |
+| 🚗 Transportation | ...                 | ...              |
+| 🎟️ Activities     | ...                 | ...              |
+| 🛍️ Miscellaneous  | ...                 | ...              |
+| **💵 TOTAL**      | **...**             | **...**          |
 
-Use realistic dollar amounts. DO NOT use placeholder "XX" — give real estimates.
+Use realistic amounts. DO NOT use placeholders — give real estimates.
 
 ---
 
